@@ -1,8 +1,6 @@
-type PageProps = {
-  post: any
-}
+const React = require('react')
 
-export default function Page({ post }: PageProps) {
+exports.render = function ({ post }) {
   return (
     <>
       <h1 className="ui-title-1">{ post.title }</h1>

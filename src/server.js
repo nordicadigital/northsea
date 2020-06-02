@@ -1,46 +1,42 @@
-import ReactDOMServer from 'react-dom/server'
-import * as Templates from './templates'
-import * as Glacier from "./core/glacier";
+const ReactDOMServer = require('react-dom/server')
+const Templates = require('./templates')
+const Glacier = require('./core/glacier')
 
-export default async function run (event: any) {
+exports.run = async (event) => {
   try {
 
     if ( ! process.env.GLACIER_JSON_URL) throw "Endereço do Storage de JSON não definido: GLACIER_JSON_URL"
 
-    console.log('REQUEST PATH: ' + event.path);
+    console.log('REQUEST PATH: ' + event.path)
 
     /**
      * Monta o PATH para busca o JSON no Storage
      */
-    const storageJsonPath = `${process.env.GLACIER_JSON_URL}/${event.path}.json`
+    const storageJsonPath = `${process.env.GLACIER_JSON_URL}${event.path}.json`
 
     /**
      * Busca o JSON no Storage
      */
     const res = await fetch(storageJsonPath)
-    const content: any = await res.json()
-    const type: string = content.type || 'post'
+    const content = await res.json()
+    const type = content.type || 'post'
 
     /**
      * Se encontrar, Pega o template correto indicado no JSON
      * Seta o JSON como props do template
      */
-    const reactPage = Templates.getTemplate(type, content)
+    const template = Templates.getTemplate(type)
+    const reactPage = template.render({ post: content })
 
     /**
      * Renderiza o React para HTML estático
      */
-    const bodyHtml: string = ReactDOMServer.renderToStaticMarkup(reactPage)
-
-    /**
-     * Monta o PATH salvar o HTML no Storage
-     */
-    const storageHtmlPath: string = `${process.env.GLACIER_STATIC_VERSION}/${event.path}`
+    const bodyHtml = ReactDOMServer.renderToStaticMarkup(reactPage)
 
     /**
      * Salva o HTML no S3
      */
-    Glacier.getGlacier('aws').upload(bodyHtml, storageHtmlPath)
+    Glacier.getGlacier('aws').upload(bodyHtml, event.path)
 
     /**
      * Retorna a Response com o HTML estático
@@ -57,7 +53,7 @@ export default async function run (event: any) {
   } catch (error) {
 
     console.log('APP CATCH');
-    // console.log(error);
+    console.log(error);
 
     /**
      * REDIRECT 301
@@ -73,4 +69,4 @@ export default async function run (event: any) {
 
   }
 
-};
+}
