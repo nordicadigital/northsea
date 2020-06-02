@@ -60,12 +60,22 @@ exports.run = async (event) => {
      * Salva um arquivo com o redirect no S3
      * Retorna o Response com o 301
      */
+    Glacier.getGlacier('aws').upload('', error.path, {
+      CacheControl: "max-age="+(60*60*24*30), // 1 mês
+      WebsiteRedirectLocation: error.location,
+    })
 
     /**
      * RESPONSE 404
      * Seta o cache para 1 mês
      * Retorna o Response com o 404
      */
+    const template = Templates.getTemplate('notFound')
+    const react404Page = template.render()
+    const body404Html = ReactDOMServer.renderToStaticMarkup(react404Page)
+    Glacier.getGlacier('aws').upload(body404Html, error.path, {
+      CacheControl: "max-age="+(60*60*24*30), // 1 mês
+    })
 
   }
 
