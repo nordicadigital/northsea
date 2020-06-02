@@ -1,0 +1,56 @@
+service: icebreaker
+
+provider:
+  name: aws
+  region: '${opt:region, ''us-east-1''}'
+  runtime: nodejs12.x
+  stage: '${opt:stage, ''stg''}'
+  tags:
+    business-unit: nordica
+    project: northsea
+    application: ${self:service}
+    stage: ${self:provider.stage}
+  deploymentBucket:
+    name: 'nordica-deploy'
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource:
+        - "arn:aws:s3:::northsea-glacier-json/*"
+        - "arn:aws:s3:::northsea-glacier-html/*"
+
+functions:
+  icebreaker:
+    description: "NorthSea Icebreaker - Server"
+    handler: build/server.run
+    memorySize: 1024
+    timeout: 30
+    environment:
+      ENV: ${self:provider.stage}
+      STAGE: ${self:provider.stage}
+      GLACIER_HTML_BUCKET: 'northsea-glacier-html'
+      GLACIER_HTML_VERSION: 'v1'
+      GLACIER_CACHE_SECONDS: 300
+      GLACIER_AWS_REGION: 'us-east-1'
+      GLACIER_JSON_URL: 'https://northsea-glacier-json.s3.amazonaws.com'
+    events:
+      - http:
+          path: /
+          method: get
+      - http:
+          path: '/{proxy+}'
+          method: get
+
+package:
+  excludeDevDependencies: true
+  exclude:
+    - '*'
+    - .idea/**
+    - .vscode/**
+    - config/**
+    - src/**
+    - bin/**
+    - coverage/**
+    - temp/**
+    - test/**
